@@ -28,5 +28,4 @@ Please, for the love of what ever god you pray to, use this with caution! I stud
   
   
 # PLANS
-GUI at some point
-cleaning up code base
+GUI at some point; cleaning up code base
