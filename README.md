@@ -22,7 +22,7 @@ Searching for parameters who's value are not a given value
 
 Placing all PF 525 drives on the network in to a autotune state (very handy indeed)
 
-#WARINING
+# WARINING
 Writing to drives under operation can be dangerous! 
 Please, for the love of what ever god you pray to, use this with caution! 
 I studied Electical Enginering with a intrest in programing, I am not a safety expert or do i clame to be. 
