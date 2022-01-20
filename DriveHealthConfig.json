@@ -1,0 +1,20 @@
+{
+  "firmwear_verson":6001,
+  "drive_max_speed":6000,
+  "drive_comm_loss":10,
+  "db_and_brk_msg":false,
+  "en_subnet_parameters":
+  {
+    "value":[255,255,128,0]
+  },
+  "en_gw_parameters":
+  {
+    "value":[172,16,2,1]
+  },
+  "EN_Data_Out_Parameters":
+  {
+    "enabled":true,
+    "parameters":[157,158,159,160],
+    "correct values":[3,5,27,7]
+  }
+}
