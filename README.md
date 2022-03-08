@@ -33,5 +33,5 @@ Please, for the love of whatever god you pray to, use this with caution! I studi
 GUI at some point; cleaning up code base
 
 # CREDITS
-ottowayi's wounderful pycomm3. https://github.com/ottowayi/pycomm3 Of which this codebase would not be possible. My codebase is just a object wrapper of sorts on his library. His library does the low level CIP network packet creation and he has helped many times during development of this code base.
+ottowayi's wounderful pycomm3. https://github.com/ottowayi/pycomm3 Of which this codebase would not be possible. My codebase is just a object wrapper of sorts on his library. His library does the low level CIP network packet creation and he has helped many times during development of this codebase.
 
