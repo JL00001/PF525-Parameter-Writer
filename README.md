@@ -12,7 +12,7 @@ This may seem like a trivial issue; but when you are installing 400 Power Flex 5
 # FEATURES
 Loading and writing parameter from a excel file and deploying them to drives
 
-Parameter dumping all parameters from all drives on the network (all those that respond to a CIP discovery request) 
+Parameter dumping of all parameters from all drives on the network (all those that respond to a CIP discovery request) 
 
 Writing a single parameter to all drives on the network
 
