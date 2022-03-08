@@ -31,3 +31,7 @@ Please, for the love of whatever god you pray to, use this with caution! I studi
   
 # PLANS
 GUI at some point; cleaning up code base
+
+#CREDITS
+ottowayi's wounderful pycomm3. https://github.com/ottowayi/pycomm3 Of which this codebase would not be possible. My codebase is just a object wrapper of sorts on his library. His library does the low level CIP network packet creation and has helped in my development many times.
+
