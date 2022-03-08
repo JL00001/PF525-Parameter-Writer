@@ -24,7 +24,7 @@ Placing all PF 525 drives on the network in to a autotune state (very handy inde
 
 Drive Health Scanner (Just runs through all drives on the network, and checking their Parameters based on MY Employer Standered. Your results may very)
 
-# WARINING
+# WARNING 
 Writing to drives under operation can be dangerous! 
 Please, for the love of what ever god you pray to, use this with caution! I studied Electical Enginering with a intrest in programing, I am not a safety expert or do i clame to be. Should you cause a accident, and you try to sue me; this paragraph will server as defence evidence 1. Should anyone know more about safely writing to drives, and would be willing to help make my program safer, I am all ears
   
