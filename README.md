@@ -5,7 +5,7 @@ Code base to interact with AB Power Flex 525 drives
 This is my personal code base for a project I work on in the slow times during work. Rapid deployment of Power Flex 525 parameters. This will load in a Excel file and write out the parameter values to their respected parameter at their respected drive IP
 
 # WHY
-Because Rockwell didn't have a way to deploy parameters on mass or a way to audit parameters across the network; and my employer's way of setting parameters was by hand. This lead to only the very necessary parameters being set and those not absolutely required for drive operation being passed over.
+Because Rockwell didn't have a way to deploy parameters on mass or a way to audit parameters across the network; and my employer's way is to set parameters by hand. This lead to only the very necessary parameters being set and those not absolutely required for drive operation being forgotten.
 
 This may seem like a trivial issue; but when you are installing 400 Power Flex 525 on one area of a site, then you will understand why I created this
 
