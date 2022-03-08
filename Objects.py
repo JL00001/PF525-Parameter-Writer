@@ -8,148 +8,131 @@ import logging
 import time
 import keyboard
 import ctypes
-
+#logging.getLogger("pycomm3.cip_driver.CIPDriver").setLevel(level=logging.DEBUG)
 class DriveObject():
-    def __init__(self, plc_ip, plc_processer_slot, drive_ip,log):
-        self.log = log
-        self.drive_ip = ipaddress.ip_address(str(drive_ip))
-        self.Drive_Path = plc_ip + '/bp/' + \
-            str(plc_processer_slot) + '/enet/' + str(drive_ip)
+    def __init__(self,ip,log=None):
+        if log==None:
+            self.log = logging.getLogger("Drive " + ip)
+        else:
+            self.log = log
+        self.ip_object = ipaddress.ip_address(ip)
+        self.ip = str(self.ip_object)
 
     def read_pf525_parameter(self, Instance):
-        return(self.__read_pf525_data(b'\x93', int(Instance), b'\x09', 'INT'))
+        return(self.__read_pf525_data(b'\x93', int(Instance), b'\x09'))
 
     def read_pf525_logic_command(self):
-        return(self.__read_pf525_data(pycomm3.ClassCode.register, b'\x14', b'\x04', 'INT'))
+        return(self.__read_pf525_data(pycomm3.ClassCode.register, b'\x14', b'\x04'))
 
-    def __read_pf525_data(self, Class_Code, instance, Attribute, DataType):
+    def __read_pf525_data(self, class_code, instance, attribute, dataType=pycomm3.INT):
         try:
-            with pycomm3.CIPDriver(self.Drive_Path) as drive:
+            with pycomm3.CIPDriver(self.ip) as drive:
                 result = drive.generic_message(
                     service=pycomm3.Services.get_attribute_single,
-                    class_code=Class_Code,
+                    class_code=class_code,
                     instance=instance,
-                    attribute=Attribute,
+                    attribute=attribute,
+                    data_type=dataType,
                     connected=False,
-                    unconnected_send=True,
-                    route_path=True,
-                    data_type=pycomm3.INT
+                    route_path=False,
                 )
                 if result.error == "Device state conflict":
                     raise DeviceStateConflict(self.log)
         except pycomm3.CommError:
-            self.log.critical("Connection to Drive Could Not Be Made")
-            return None
-        self.log.info("Read : {0:3} From Class Code: {1:3} Instance: {2:7} At Drive: {3:20}".format(str(result.value), str(Class_Code), str(instance), str(self.drive_ip)))
+            raise CommError(self.log)
+        self.log.info("Read : {0:3} From Class Code: {1:3} Instance: {2:7} At Drive: {3:20}".format(str(result.value), str(class_code), str(instance), self.ip))
         return(result.value)
 
-    def read_all_pf525_data(self,dic = None,lock = None):
-        y = self.__read_pf525_data(b'\x93', 0, b'\x00', 'INT')
+    def read_all_pf525_data(self):
+        y = self.__read_pf525_data(b'\x93', 0, b'\x00')
         if y is None:
             return None
         list_of_parameters_to_read = []
         for x in range(1,y+1):
             list_of_parameters_to_read.append(x)
         return_data = self.scattered_read(list_of_parameters_to_read)
-        self.log.info("All Data Read From Drive At: " + self.Drive_Path)
-        if dic == None or lock == None:
-            return return_data
-        else:
-            lock.acquire()
-            dic[str(self.drive_ip)] = return_data
-            lock.release()
-            return
+        self.log.info("All Data Read From Drive At: " + self.ip)
+        data = {}
+        data["drive"] = self.ip
+        data["data"] = return_data
+        return data
 
-    def detailed_read_all_pf525_data(self,dic = None,lock = None):
-        y = self.__read_pf525_data(b'\x93', 0, b'\x00', 'INT')
+    def detailed_read_all_pf525_data(self):
+        y = self.__read_pf525_data(b'\x93', 0, b'\x00')
         if y is None:
             return None
         return_data = []
-        self.log.critical("Time One")
         for x in range(1,y+1):
-            #return_data.append(Parameter(self.Drive_Path,x,self.log).return_All_Data())
-            Parameter(self.Drive_Path,x,self.log)
-        self.log.critical("Time Two")
-        if dic == None or lock == None:
-            return return_data
-        else:
-            lock.acquire()
-            dic[str(self.drive_ip)] = return_data
-            lock.release()
-            return
+            return_data.append(Parameter(self.ip,x,self.log).return_All_Data())
+        return return_data
 
     def write_pf525_parameter(self, Parameter, Value, Check=True):
         self.__write_pf525_data(b'\x93', Parameter, Value, b'\x09', Check)
 
-    def write_pf525_logic_command(self, Value):
+    def __write_pf525_logic_command(self, Value):
         self.__write_pf525_data(pycomm3.ClassCode.register, b'\x14', Value, b'\x04', False)
 
-    def write_pf525_logic_timeout(self, timeout):
+    def __write_pf525_logic_timeout(self, timeout):
         self.__write_pf525_data(
             pycomm3.ClassCode.register, b'\x00', timeout, b'\x64', False)
 
-    def __write_pf525_data(self, Class_Code, instance, request_data, Attribute, Check):
+    def __write_pf525_data(self, class_code, instance, request_data, attribute, check):
         try:
-            with pycomm3.CIPDriver(self.Drive_Path) as drive:
+            with pycomm3.CIPDriver(self.ip) as drive:
                 result = drive.generic_message(
                     service=pycomm3.Services.set_attribute_single,
-                    class_code=Class_Code,
+                    class_code=class_code,
                     instance=instance,  # Parameter
-                    attribute=Attribute,
-                    request_data=pycomm3.INT.encode(request_data),  # value
+                    attribute=attribute,
                     connected=False,
-                    unconnected_send=True,
-                    route_path=True
+                    route_path=False,
+                    request_data=pycomm3.INT.encode(request_data),  # value
                     )
                 if result.error == "Device state conflict":
                     raise DeviceStateConflict(self.log)
         except pycomm3.CommError:
-            self.log.critical("Connection to Drive Could Not Be Made")
-            return
-        self.log.info("Wrote: {0:3} to Class Code  : {1:3} Instance: {2:7} At Drive: {3:20}".format(str(request_data), str(Class_Code), str(instance), str(self.drive_ip)))
-        if Check:
+            raise CommError(self.log)
+        self.log.info("Wrote: {0:3} to Class Code  : {1:3} Instance: {2:7} At Drive: {3:20}".format(str(request_data), str(class_code), str(instance), self.ip))
+        if check:
             if self.read_pf525_parameter(instance) != request_data:
-                self.log.critical("Parameter {0:3} Data Write To Drive {1:15} Has Failed".format(str(instance),str(self.drive_ip)))
+                self.log.critical("Parameter {0:3} Data Write To Drive {1:15} Has Failed".format(str(instance),self.ip))
             else:
-                self.log.warning("Parameter {0:3} Data Write To Drive {1:15} Was Successful".format(str(instance),str(self.drive_ip)))
+                self.log.warning("Parameter {0:3} Data Write To Drive {1:15} Was Successful".format(str(instance),self.ip))
 
     def drive_autotune(self):
-        timeout = 45
+        timeout = 60
         # Saves the current value of parameter 46 to memory
         Value46 = self.read_pf525_parameter(46)
         # Saves the current value of parameter 47 to memory
         Value47 = self.read_pf525_parameter(47)
         # Set the CIP Command Timeout. This will cause a fatal fault if the drive doesnt hear back from the control or program after a set amount of time
-        self.write_pf525_logic_timeout(timeout)
+        self.__write_pf525_logic_timeout(timeout)
         try:
             self.write_pf525_parameter(46, 5)  # Sets 46 to value 5
             self.write_pf525_parameter(47, 15)  # Sets 47 to value 15
             if self.read_pf525_logic_command() != 1:
-                self.write_pf525_logic_command(8)
+                self.__write_pf525_logic_command(8)
             # Sends a stop command to the drive
-            self.write_pf525_logic_command(0)
+            self.__write_pf525_logic_command(0)
             # Set Parameter 40 to 1, telling the drive to static tune
             self.write_pf525_parameter(40, 1)
             # Clear Motor Rr parameter (498). Polling parameter 498; The resistance of the motor, will give us a idea if the process is done
             self.write_pf525_parameter(498, 0)
             # Sent a start command to the drive; just like pushing the start button
-            self.write_pf525_logic_command(2)
+            self.__write_pf525_logic_command(2)
             x = 0
             while(x < timeout):
                 time.sleep(1)
                 x = x + 1
                 if self.read_pf525_parameter(498) != 0:
                     break
-                #print("\rSleeping: {0} Seconds Have Passed".format(x), end="\r")
-            #print("")
-            #print("Done")
             # Telling the drive to stop "running"
-            self.write_pf525_logic_command(1)
+            self.__write_pf525_logic_command(1)
         except DeviceStateConflict:
             return
         finally:
             # Setting the CIP Command Timeout back to 0 disabling it
-            self.write_pf525_logic_timeout(0)
+            self.__write_pf525_logic_timeout(0)
             # Loads the saved value of parameter 46 back to the drive
             self.write_pf525_parameter(46, Value46)
             # Loads the saved value of parameter 47 back to the drive
@@ -167,23 +150,21 @@ class DriveObject():
             read_params.append(tuple([x,0]))
         ParamItem = pycomm3.Struct(pycomm3.UINT("parameter"), pycomm3.UINT('value'))
         try:
-            with pycomm3.CIPDriver(self.Drive_Path) as pf525:
+            with pycomm3.CIPDriver(str(self.ip)) as pf525:
                 result = pf525.generic_message(
                     service=0x32,
                     class_code=0x93,
                     instance=0,
                     connected=False,
-                    unconnected_send=True,
-                    route_path=True,
+                    route_path=False,
                     request_data=ParamItem[len(read_params)].encode(read_params),
                     data_type=ParamItem[len(read_params)],
                 )
                 if result.error == "Device state conflict":
                     raise DeviceStateConflict(self.log)
         except pycomm3.CommError:
-            self.log.critical("Connection to Drive Could Not Be Made")
-            return None
-        self.log.debug("Read: {0:3} From Class Code: {1:3} Instance: {2:3} At Drive: {3:20}".format(str(result.value), str(b'0x93'), str(0), str(self.drive_ip)))
+            raise CommError(self.log)
+        self.log.debug("Read: {0:3} From Class Code: {1:3} Instance: {2:3} At Drive: {3:20}".format(str(result.value), str(b'0x93'), str(0), self.ip))
         return_data = []
         for x in result.value:
             return_data.append(x['value'])
@@ -197,18 +178,17 @@ class DriveObject():
 
     def scattered_write(self,write_params):
         ParamItem = pycomm3.Struct(pycomm3.UINT("parameter"), pycomm3.UINT('value'))
-        with pycomm3.CIPDriver(self.Drive_Path) as pf525:
+        with pycomm3.CIPDriver(self.ip) as pf525:
             result = pf525.generic_message(
                 service=0x34,
                 class_code=0x93,
                 instance=0,
                 connected=False,
-                unconnected_send=True,
-                route_path=True,
+                route_path=False,
                 request_data=ParamItem[len(write_params)].encode(write_params),
                 data_type=ParamItem[len(write_params)],
             )
-        self.log.info("Wrote: {0:3} to Class Code  : {1:3} Instance: {2:7} At Drive: {3:20}".format(str(write_params), str(0x93), str(0), str(self.drive_ip)))
+        self.log.info("Wrote: {0:3} to Class Code  : {1:3} Instance: {2:7} At Drive: {3:20}".format(str(write_params), str(0x93), str(0), self.ip))
 
 class NetworkObject():
     def __init__(self,loggingLevel=30,LoggingFile=None):
@@ -218,8 +198,8 @@ class NetworkObject():
     def __discover_network_devices(self):
         manager =  multiprocessing.Manager()
         self.list_of_drive_objects = manager.dict()
-        self.list_of_plcs_objects = manager.dict()
-        self.discovery_process = multiprocessing.Process(target=discover_network_devices, args=(self.list_of_drive_objects, self.list_of_plcs_objects, self.log))
+        #self.list_of_plcs_objects = manager.dict()
+        self.discovery_process = multiprocessing.Process(target=discover_network_devices, args=(self.list_of_drive_objects, self.log))
         self.discovery_process.start()
         self.Scanner = True
         keyboard.add_hotkey('esc', self.__esc)
@@ -227,7 +207,7 @@ class NetworkObject():
         try:
             while self.Scanner:
                 time.sleep(1)
-                print("The Scanner Process Has Found: {0:3} Drives and {1:1} Processer".format(len(self.list_of_drive_objects.keys()),len(self.list_of_plcs_objects.keys())),end = "\r")
+                print("The Scanner Process Has Found: {0:3} Drives".format(len(self.list_of_drive_objects.keys())),end = "\r")
         except:
             self.discovery_process.terminate()
 
@@ -248,7 +228,7 @@ class NetworkObject():
             if x in self.list_of_drive_objects.keys():
                 New_Process = multiprocessing.Process(target=self.list_of_drive_objects[x].drive_autotune)
                 New_Process.start()
-                self.log.info("Created New Process: {0:5} For Autotuneing PowerFlex At {1:15}".format(New_Process.pid,str(self.list_of_drive_objects[x].drive_ip)))
+                self.log.info("Created New Process: {0:5} For Autotuneing PowerFlex At {1:15}".format(New_Process.pid,self.list_of_drive_objects[x].ip))
                 list_of_autotuneing_drives.append(New_Process)
             else:
                 self.log.debug("A Command Was Given To Autotune A Drive, But That Drive Is Not In The List Of Drive Objects. Passing")
@@ -256,12 +236,12 @@ class NetworkObject():
             self.log.info("Joining Drive Process: {0:5}".format(x.pid))
             x.join()
 
-    def all_network_drive_autoTune(self):
+    def network_autoTune_drive(self):
         self.__autoTune_list_of_drives(self.list_of_drive_objects.keys())
 
-    def network_masked_drive_autoTune(self, ip_address, mask):
+    def network_masked_autoTune_drive(self, ip, mask):
         try:
-            network = ipaddress.IPv4Network(str(ip_address) + "/" + str(mask))
+            network = ipaddress.IPv4Network(ip + "/" + str(mask))
         except ValueError:
             self.log.critical("IP Address And / Or Mask Is Not Correct")
             return
@@ -271,25 +251,24 @@ class NetworkObject():
         self.__autoTune_list_of_drives(list_of_drives_to_autotune)
 
     def single_read_parameter(self, ip, parameter):
-        if self.__return_list_number_for_ip(ip) != None:
-            return(self.list_of_drive_objects[self.__return_list_number_for_ip(ip)].read_pf525_parameter(parameter))
+        if ip in self.list_of_drive_objects.keys():
+            return(self.list_of_drive_objects[ip].read_pf525_parameter(parameter))
         else:
             self.log.critical("Drive Could Not Be Found")
             return("Drive Could Not Be Found")
 
     def single_write_parameter(self, ip, parameter, value):
-        ip = str(ip)
         if ip in self.list_of_drive_objects.keys():
             self.list_of_drive_objects[ip].write_pf525_parameter(parameter, value)
         else:
             self.log.critical("Drive Could Not Be Found")
             return
 
-    def network_drive_health(self, Write=False, **kwargs):
+    def network_drive_health(self, Write=False):
         drive_health_data = json.load(open('DriveHealthConfig.json',))
         self.log.warning("Starting Drive Health Scanner")
-        list_of_parameters_to_read = [6,29,41,42,44,46,47,62,63,64,65,66,67,68,76,126,128,437,498,544,545,573]
-        for x in self.list_of_drive_objects.keys():
+        list_of_parameters_to_read = [6,29,41,42,44,46,47,62,63,64,65,66,67,68,76,126,128,437,498,544,545,573,105]
+        for x in sorted(self.list_of_drive_objects.keys()):
             return_data = self.list_of_drive_objects[x].scattered_read(list_of_parameters_to_read)
             data = {
                 "6":return_data[0],
@@ -313,9 +292,10 @@ class NetworkObject():
                 "498":return_data[18],
                 "544":return_data[19],
                 "545":return_data[20],
-                "573":return_data[21]
+                "573":return_data[21],
+                "105":return_data[22]
             }
-            drive_ip_local = str(self.list_of_drive_objects[x].drive_ip)
+            drive_ip_local = self.list_of_drive_objects[x].ip
             if ((data["6"] & 0x0001) == 0):
                 drive_is_writeable = True and Write
             else:
@@ -331,16 +311,19 @@ class NetworkObject():
                 self.log.warning(drive_ip_local + " Hasn't Had Flying Start Disabled")
                 if(drive_is_writeable):
                     self.self.list_of_drive_objects[x].write_pf525_parameter(545, 0)
-
-            if(drive_health_data["EN_Data_Out_Parameters"]["enabled"]):
-                if len(drive_health_data["EN_Data_Out_Parameters"]["parameters"]) == len(drive_health_data["EN_Data_Out_Parameters"]["correct values"]):
-                    for y in range(len(drive_health_data["EN_Data_Out_Parameters"]["parameters"])):
-                        if (self.list_of_drive_objects[x].read_pf525_parameter(drive_health_data["EN_Data_Out_Parameters"]["parameters"][y]) != drive_health_data["EN_Data_Out_Parameters"]["correct values"][y]):
-                            self.log.warning(drive_ip_local + " Has Wrong EN Data Out_Parameters Set: {0}".format(drive_health_data["EN_Data_Out_Parameters"]["parameters"][y]))
-                            if(drive_is_writeable):
-                                self.list_of_drive_objects[x].write_pf525_parameter(drive_health_data["EN_Data_Out_Parameters"]["parameters"][y], drive_health_data["EN_Data_Out_Parameters"]["correct values"][y])
-                else:
-                    self.log.critical("Length Of 'EN_Data_Out_Parameters:parameters' Does Not Match The Length 'EN_Data_Out_Parameters:correct values' In DriveHealthConfig")
+                    
+            if len(drive_health_data["en_data_out_parameters"]["value"]) == 4:
+                if (self.list_of_drive_objects[x].scattered_read([157,158,159,160]) != drive_health_data["en_data_out_parameters"]["value"]):
+                    self.log.warning(drive_ip_local + " Has Wrong EN Data Out_Parameters Set: {0}".format(drive_health_data["EN_Data_Out_Parameters"]["parameters"][y]))
+                    if(drive_is_writeable):
+                        write_params = [
+                        (157, drive_health_data["en_data_out_parameters"]["value"][0]),
+                        (158, drive_health_data["en_data_out_parameters"]["value"][1]),
+                        (159, drive_health_data["en_data_out_parameters"]["value"][2]),
+                        (160, drive_health_data["en_data_out_parameters"]["value"][3])]
+                        network.list_of_drive_objects[ip].scattered_write(write_params)
+            else:
+                self.log.critical("Length Of 'EN_Data_Out_Parameters:parameters' Does Not Match The Length 'EN_Data_Out_Parameters:correct values' In DriveHealthConfig")
 
             if(data["44"] != drive_health_data["drive_max_speed"]):
                 self.log.warning(drive_ip_local + " Has The Wrong MAX FREQ")
@@ -366,46 +349,26 @@ class NetworkObject():
             if(drive_health_data["db_and_brk_msg"]):
                 if(data["76"] == 2):
                     self.log.warning(drive_ip_local + " Parameter 76 Implies That There Is A BRK Attached To This Drive")
-
                 if(data["437"] != 0):
                     self.log.warning(drive_ip_local + " Parameter 437 Implies That There Is A Dynamic Braking Resistor Attached To This Drive")
-            """
-            if(self.list_of_drive_objects[x].read_pf525_parameter(133) == 0 and self.list_of_drive_objects[x].read_pf525_parameter(134) == 0 and self.list_of_drive_objects[x].read_pf525_parameter(135) == 0 and self.list_of_drive_objects[x].read_pf525_parameter(136) == 0):
-                self.log.warning(
-                    str(self.list_of_drive_objects[x].drive_ip) + " EN Subnet Not Set")
 
             if(self.list_of_drive_objects[x].read_pf525_parameter(137) == 0 and self.list_of_drive_objects[x].read_pf525_parameter(138) == 0 and self.list_of_drive_objects[x].read_pf525_parameter(139) == 0 and self.list_of_drive_objects[x].read_pf525_parameter(140) == 0):
-                self.log.warning(
-                    str(self.list_of_drive_objects[x].drive_ip) + " EN Gateway Not Set")
+                self.log.warning(drive_ip_local + " EN Gateway Not Set")
 
             if len(drive_health_data["en_subnet_parameters"]["value"]) == 4:
-                list = [133, 134, 135, 136]
-                for y in range(4):
-                    if (self.list_of_drive_objects[x].read_pf525_parameter(list[y]) != drive_health_data["en_subnet_parameters"]["value"][y]):
-                        self.log.warning(
-                            str(self.list_of_drive_objects[x].drive_ip) + " Has Wrong Subnet Parameters Set")
-                        break
+                if (self.list_of_drive_objects[x].scattered_read([133, 134, 135, 136]) != drive_health_data["en_subnet_parameters"]["value"]):
+                    self.log.warning(drive_ip_local + " Has Wrong Subnet Parameters Set")
+                    if(drive_is_writeable):
+                        write_params = [
+                        (133, drive_health_data["en_subnet_parameters"]["value"][0]),
+                        (134, drive_health_data["en_subnet_parameters"]["value"][1]),
+                        (135, drive_health_data["en_subnet_parameters"]["value"][2]),
+                        (136, drive_health_data["en_subnet_parameters"]["value"][3])]
+                        self.list_of_drive_objects[drive_ip_local].scattered_write(write_params)
 
             else:
-                self.log.critical(
-                    " Length Of 'en_subnet_parameters:value' In DriveHealthConfig.json Does Not Match The Length Of 4")
-
-            if len(drive_health_data["en_gw_parameters"]["value"]) == 4:
-                list = [137, 138, 139, 140]
-
-                for y in range(4):
-
-                    if (self.list_of_drive_objects[x].read_pf525_parameter(list[y]) != drive_health_data["en_gw_parameters"]["value"][y]):
-                        self.log.warning(
-                            str(self.list_of_drive_objects[x].drive_ip) + " Has Wrong Gateway Parameters Set")
-                        if(drive_is_writeable):
-                            self.list_of_drive_objects[x].write_pf525_parameter(
-                                list[y], drive_health_data["en_gw_parameters"]["value"][y])
-
-            else:
-                self.log.critical(
-                    " Length Of 'en_gw_parameters:value' In DriveHealthConfig.json Does Not Match The Length Of 4")
-            """
+                self.log.critical("Length Of 'en_subnet_parameters' In DriveHealthConfig.json Does Not Match The Length Of 4")
+                
             if(data["41"] < 100 or data["42"] < 100):
                 if (data["573"] != 2):
                     self.log.warning(drive_ip_local + " Jerk Parameters Have Been Incorrectly Set. Needs To Be: 2")
@@ -461,6 +424,11 @@ class NetworkObject():
                 self.log.warning(drive_ip_local + " DigIn TermBlk 08 Has Not Been Disabled")
                 if(drive_is_writeable):
                     self.list_of_drive_objects[x].write_pf525_parameter(68, 0)
+                    
+            if(data["105"] != 0):
+                self.log.warning(drive_ip_local + " Has Not Had Safety Open Fault Disabled")
+                if(drive_is_writeable):
+                    self.list_of_drive_objects[x].write_pf525_parameter(105, 0)
 
         self.log.warning("Ending Drive Health Scanner")
 
@@ -470,38 +438,28 @@ class NetworkObject():
             result = self.list_of_drive_objects[x].read_pf525_parameter(
                 parameter)
             if (result != value):
-                return_data.append(
-                    [str(self.list_of_drive_objects[x].drive_ip), result])
+                return_data.append([self.list_of_drive_objects[x].ip, result])
         return return_data
 
-    def network_drive_write(self, parameter, value):
+    def network_write_parameter(self, parameter, value):
         for x in self.list_of_drive_objects.keys():
-            self.list_of_drive_objects[x].write_pf525_parameter(
-                parameter, value)
+            self.list_of_drive_objects[x].write_pf525_parameter(parameter, value)
 
-    def network_drive_read(self, parameter):
+    def network_read_parameter(self, parameter):
         dic = {}
         for x in self.list_of_drive_objects.keys():
             dic[x] = self.list_of_drive_objects[x].read_pf525_parameter(parameter)
         return dic
 
-    def network_parameter_dump(self, file):
+    def network_parameter_dump(self, file="Drive Parameter Dump"):
         import Excel_Dump_Lables
-        data = []
-        list_of_reading_drive_process = []
         self.log.warning("Creating Drive Reading Treads")
-        lock = multiprocessing.Lock()
-        manager = multiprocessing.Manager()
-        dic = manager.dict()
-        for x in self.list_of_drive_objects.keys():
-            New_Process = multiprocessing.Process(target=self.list_of_drive_objects[x].read_all_pf525_data,args=(dic,lock))
-            New_Process.start()
-            self.log.info("Created New Process: {0:5} For Reading All Parameter On Drive: {1:15}".format(New_Process.pid, str(self.list_of_drive_objects[x].drive_ip)))
-            list_of_reading_drive_process.append(New_Process)
-        self.log.warning("Joining Drive Reading Treads")
-        for x in list_of_reading_drive_process:
-            self.log.info("Joining Drive Process: {0:5}".format(x.pid))
-            x.join()
+        pool = multiprocessing.Pool(32)
+        dic = {}
+        list = []
+        for y in pool.map(read_all_pf525_data_process, self.list_of_drive_objects.keys()):
+            dic[y["drive"]] = y["data"]
+        data = []
         for x in dic.keys():
             data.append(dic[x])
         df1 = pd.DataFrame(data, index=dic.keys(), columns=range(1,732))
@@ -509,10 +467,18 @@ class NetworkObject():
         df1 = df1.T
         df2 = pd.DataFrame(Excel_Dump_Lables.Lables, index=range(1,732), columns=["Name"])
         df = pd.concat([df2, df1], axis=1)
-        df.to_excel(file + ".xlsx")
+        self.log.warning("Writing To Excel")
+        try:
+            df.to_excel(file + ".xlsx")
+        except PermissionError:
+            self.log.critical("Close Out The Excel File As I Am Trying To Write To It")
+            self.log.critical("Press Any Key When Ready")
+            input()
+            self.log.warning("Writing To Excel")
+            df.to_excel(file + ".xlsx")
         self.log.warning("Excel File Saved")
 
-    def load_Parameters_from_excel(self, Filename):
+    def load_parameters_from_excel(self, Filename):
         try:
             open(Filename, 'r')
         except PermissionError:
@@ -539,6 +505,9 @@ class NetworkObject():
                 except ValueError:
                     pass
 
+    def Dev_Add_Drive(self,ip):
+        self.list_of_drive_objects[ip] = DriveObject(ip, self.log)
+    
     def __loggerSetup(self, loggerLevel=10, loggerFile=None, loggerName=None):
 
         if loggerName is None:
@@ -563,8 +532,11 @@ class NetworkObject():
         self.log.debug("Logger Is Loaded")
 
 class Controller():
-    def __init__(self, ip, log):
-        self.log = log
+    def __init__(self, ip, log=None):
+        if log==None:
+            self.log = logging.getLogger("Drive " + ip)
+        else:
+            self.log = log
         self.ip = ip
         self.slot = self.__scan_for_processer_slot()
 
@@ -587,8 +559,7 @@ class Controller():
             list_of_possible_processer_slots_str = list_of_possible_processer_slots
             self.log.critical("Select Which Slot Is The Correct One")
             for x in range(len(list_of_possible_processer_slots)):
-                list_of_possible_processer_slots[x] = str(
-                    list_of_possible_processer_slots_str[x])
+                list_of_possible_processer_slots[x] = str(list_of_possible_processer_slots_str[x])
             x = True
             while(x):
                 user_input = input("Enter your value: ")
@@ -614,28 +585,28 @@ class DeviceStateConflict(Exception):
         self.log = log
         self.log.critical("The Drive Is Not In The Correct State")
         self.log.critical("Inhibit The Drive In The I/O Tree Or Place The Whole Controller In Program Mode")
+        
+class CommError(Exception):
+    def __init__(self, log):
+        self.log = log
+        self.log.critical("The Drive Could Not Be Reached")
 
-def discover_network_devices(list_of_drive_objects, list_of_plcs_objects,log):
+def discover_network_devices(list_of_drive_objects,log):
     while True:
         list_of_nodes = pycomm3.CIPDriver.discover()
         for x in list_of_nodes:
             if "ip_address" in x:
-                if(x["product_type"] == "Programmable Logic Controller"):
-                    if(x["product_name"][0:4] == "1756"):
-                        ipaddress = str(x['ip_address'])
-                        list_of_plcs_objects[ipaddress] = Controller(ipaddress, log)
-        if len(list_of_plcs_objects.keys()) != 0:
-            for x in list_of_nodes:
-                if "ip_address" in x:
-                    if(x["product_name"][0:13] == "PowerFlex 525"):
-                        if x['ip_address'] not in list_of_drive_objects.keys():
-                            ipaddress = str(x['ip_address'])
-                            plc_object = list_of_plcs_objects[list_of_plcs_objects.keys()[0]]
-                            list_of_drive_objects[ipaddress] = DriveObject(plc_object.ip, plc_object.slot, ipaddress, log)
+                if(x["product_name"][0:13] == "PowerFlex 525"):
+                    if x['ip_address'] not in list_of_drive_objects.keys():
+                        ipaddress = x['ip_address']
+                        list_of_drive_objects[ipaddress] = DriveObject(ipaddress, log)
 
+def read_all_pf525_data_process(ip):
+        return DriveObject(ip).read_all_pf525_data()
+    
 class Parameter():
-    def __init__(self, drive_path, parameter, log):
-        self.Drive_Path = drive_path
+    def __init__(self, ip, parameter, log):
+        self.ip = ip
         self.Parameter = parameter
         self.log = log
         self.DPI_Online_Read_Full = {}
@@ -664,13 +635,13 @@ class Parameter():
                                     pycomm3.USINT(""),
                                     pycomm3.n_bytes(16,"Parameter_Name"))
         try:
-            with pycomm3.CIPDriver(self.Drive_Path) as pf525:
-                result = pf525.generic_message(
+            with pycomm3.CIPDriver(self.ip) as drive:
+                result = drive.generic_message(
                     service=pycomm3.Services.get_attribute_single,
                     class_code=0x93,
                     connected=False,
                     unconnected_send=True,
-                    route_path=True,
+                    route_path=False,
                     instance=self.Parameter,     # Parameter
                     attribute=7,            # Method
                     data_type=DPI_Online_Read_Full[1],
