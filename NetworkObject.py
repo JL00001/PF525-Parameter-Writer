@@ -114,18 +114,7 @@ class NetworkObject():
                 drive_is_writeable = True and Write
             else:
                 drive_is_writeable = False and Write
-
-            if(data["544"] != 1):
-                self.log.warning(drive_ip_local + " Hasn't Had Reverse Disabled")
-
-            if(data["498"] == 0):
-                self.log.warning(drive_ip_local + " Hasn't Been AutoTuned")
-
-            if(data["545"] != 0):
-                self.log.warning(drive_ip_local + " Hasn't Had Flying Start Disabled")
-                if(drive_is_writeable):
-                    self.self.list_of_drive_objects[x].write_pf525_parameter(545, 0)
-                    
+ 
             if len(drive_health_data["en_data_out_parameters"]["value"]) == 4:
                 if (self.list_of_drive_objects[x].scattered_read([157,158,159,160]) != drive_health_data["en_data_out_parameters"]["value"]):
                     self.log.warning(drive_ip_local + " Has Wrong EN Data Out_Parameters Set: {0}".format(drive_health_data["EN_Data_Out_Parameters"]["parameters"][y]))
@@ -138,37 +127,7 @@ class NetworkObject():
                         network.list_of_drive_objects[ip].scattered_write(write_params)
             else:
                 self.log.critical("Length Of 'EN_Data_Out_Parameters:parameters' Does Not Match The Length 'EN_Data_Out_Parameters:correct values' In DriveHealthConfig")
-
-            if(data["44"] != drive_health_data["drive_max_speed"]):
-                self.log.warning(drive_ip_local + " Has The Wrong MAX FREQ")
-                if(drive_is_writeable):
-                    self.self.list_of_drive_objects[x].write_pf525_parameter(44, drive_health_data["drive_max_speed"])
-
-            if(data["29"] != drive_health_data["firmwear_verson"]):
-                self.log.warning(drive_ip_local + " Has The Wrong FirmWear Version")
-
-            if((data["46"] != 5) or (data["47"] != 15)):
-                self.log.warning(drive_ip_local + " Drive Not Placed In Auto Mode")
-
-            if(data["41"] == 1000) or (data["42"] == 1000):
-                self.log.warning(drive_ip_local + " Drive Accel/Decel Parameters Are Default Values")
-
-            if(data["41"] < 100 or data["42"] < 100):
-                if(data["437"] == 0):
-                    self.log.warning(drive_ip_local + " The Accel/Decel Is Too Fast For There Not To Be A Dynamic Break Attached")
-
-            if(data["76"] == 0):
-                self.log.warning(drive_ip_local + " Parameter 76 Is A Default Value. Change to 2 or 13")
-
-            if(drive_health_data["db_and_brk_msg"]):
-                if(data["76"] == 2):
-                    self.log.warning(drive_ip_local + " Parameter 76 Implies That There Is A BRK Attached To This Drive")
-                if(data["437"] != 0):
-                    self.log.warning(drive_ip_local + " Parameter 437 Implies That There Is A Dynamic Braking Resistor Attached To This Drive")
-
-            if(self.list_of_drive_objects[x].read_pf525_parameter(137) == 0 and self.list_of_drive_objects[x].read_pf525_parameter(138) == 0 and self.list_of_drive_objects[x].read_pf525_parameter(139) == 0 and self.list_of_drive_objects[x].read_pf525_parameter(140) == 0):
-                self.log.warning(drive_ip_local + " EN Gateway Not Set")
-
+                
             if len(drive_health_data["en_subnet_parameters"]["value"]) == 4:
                 if (self.list_of_drive_objects[x].scattered_read([133, 134, 135, 136]) != drive_health_data["en_subnet_parameters"]["value"]):
                     self.log.warning(drive_ip_local + " Has Wrong Subnet Parameters Set")
@@ -182,6 +141,61 @@ class NetworkObject():
 
             else:
                 self.log.critical("Length Of 'en_subnet_parameters' In DriveHealthConfig.json Does Not Match The Length Of 4")
+                
+            if len(drive_health_data["en_subnet_parameters"]["value"]) == 4:
+                if (self.list_of_drive_objects[x].scattered_read([133, 134, 135, 136]) != drive_health_data["en_subnet_parameters"]["value"]):
+                    self.log.warning(drive_ip_local + " Has Wrong Subnet Parameters Set")
+                    if(drive_is_writeable):
+                        write_params = [
+                        (133, drive_health_data["en_subnet_parameters"]["value"][0]),
+                        (134, drive_health_data["en_subnet_parameters"]["value"][1]),
+                        (135, drive_health_data["en_subnet_parameters"]["value"][2]),
+                        (136, drive_health_data["en_subnet_parameters"]["value"][3])]
+                        self.list_of_drive_objects[drive_ip_local].scattered_write(write_params)
+
+            else:
+                self.log.critical("Length Of 'en_subnet_parameters' In DriveHealthConfig.json Does Not Match The Length Of 4")
+            
+            if(self.list_of_drive_objects[x].scattered_read([133, 134, 135, 136]) == [0,0,0,0]):
+                self.log.warning(drive_ip_local + " EN Gateway Not Set")
+                
+            if(data["544"] != 1):
+                self.log.warning(drive_ip_local + " Hasn't Had Reverse Disabled")
+
+            if(data["498"] == 0):
+                self.log.warning(drive_ip_local + " Hasn't Been AutoTuned")
+                
+            if(data["41"] == 1000) or (data["42"] == 1000):
+                self.log.warning(drive_ip_local + " Drive Accel/Decel Parameters Are Default Values")
+                
+            if(data["29"] != drive_health_data["firmwear_verson"]):
+                self.log.warning(drive_ip_local + " Has The Wrong FirmWear Version")
+                
+            if(data["46"] != 5 or data["47"] != 15):
+                self.log.warning(drive_ip_local + " Drive Not Placed In Auto Mode")
+
+            if(data["41"] < 100 or data["42"] < 100):
+                if(data["437"] == 0):
+                    self.log.warning(drive_ip_local + " The Accel/Decel Is Too Fast For There Not To Be A Dynamic Break Attached")
+
+            if(data["76"] == 0):
+                self.log.warning(drive_ip_local + " Parameter 76 Is A Default Value. Change to 2 or 13")
+                
+            if(drive_health_data["db_and_brk_msg"]):
+                if(data["76"] == 2):
+                    self.log.warning(drive_ip_local + " Parameter 76 Implies That There Is A BRK Attached To This Drive")
+                if(data["437"] != 0):
+                    self.log.warning(drive_ip_local + " Parameter 437 Implies That There Is A Dynamic Braking Resistor Attached To This Drive")
+
+            if(data["545"] != 0):
+                self.log.warning(drive_ip_local + " Hasn't Had Flying Start Disabled")
+                if(drive_is_writeable):
+                    self.self.list_of_drive_objects[x].write_pf525_parameter(545, 0)
+
+            if(data["44"] != drive_health_data["drive_max_speed"]):
+                self.log.warning(drive_ip_local + " Has The Wrong MAX FREQ")
+                if(drive_is_writeable):
+                    self.self.list_of_drive_objects[x].write_pf525_parameter(44, drive_health_data["drive_max_speed"])
                 
             if(data["41"] < 100 or data["42"] < 100):
                 if (data["573"] != 2):
