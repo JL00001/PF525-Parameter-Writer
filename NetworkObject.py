@@ -81,42 +81,42 @@ class NetworkObject():
         import json
         drive_health_data = json.load(open('DriveHealthConfig.json',))
         self.log.warning("Starting Drive Health Scanner")
-        list_of_parameters_to_read = [6,29,41,42,44,46,47,62,63,64,65,66,67,68,76,126,128,437,498,544,545,573,105]
-        for x in sorted(self.list_of_drive_objects.keys()):
-            return_data = self.list_of_drive_objects[x].scattered_read(list_of_parameters_to_read)
+        list_of_parameters_to_read = [6,29,41,42,44,46,47,62,63,64,65,66,67,68,76,81,105,126,128,437,498,544,545,573]
+        for drive_ip_local in sorted(self.list_of_drive_objects.keys()):
+            return_data = self.list_of_drive_objects[drive_ip_local].scattered_read(list_of_parameters_to_read)
             data = {
-                "6":return_data[0],
-                "29":return_data[1],
-                "41":return_data[2],
-                "42":return_data[3],
-                "44":return_data[4],
-                "46":return_data[5],
-                "47":return_data[6],
-                "62":return_data[7],
-                "63":return_data[8],
-                "64":return_data[9],
-                "65":return_data[10],
-                "66":return_data[11],
-                "67":return_data[12],
-                "68":return_data[13],
-                "76":return_data[14],
-                "126":return_data[15],
-                "128":return_data[16],
-                "437":return_data[17],
-                "498":return_data[18],
-                "544":return_data[19],
-                "545":return_data[20],
-                "573":return_data[21],
-                "105":return_data[22]
+                "6":return_data[0],         #Current Status Of The Drive (If Running)
+                "29":return_data[1],        #Firmware Version
+                "41":return_data[2],        #Accel Time
+                "42":return_data[3],        #Decel Time
+                "44":return_data[4],        #Max Hz
+                "46":return_data[5],        #Start Source 1
+                "47":return_data[6],        #Speed Source 1
+                "62":return_data[7],        #DigIn TermBlk 02
+                "63":return_data[8],        #DigIn TermBlk 03
+                "64":return_data[9],        #2-Wire Mode
+                "65":return_data[10],       #DigIn TermBlk 05
+                "66":return_data[11],       #DigIn TermBlk 06
+                "67":return_data[12],       #DigIn TermBlk 07
+                "68":return_data[13],       #DigIn TermBlk 08       
+                "76":return_data[14],       #Relay Out1 Sel
+                "81":return_data[15],       #Relay Out2 Sel
+                "105":return_data[16],      #Safety Open En         (Suppresses Motor Fault On Safety Open (E-Stop Pulled))
+                "126":return_data[17],      #Comm Loss Time
+                "128":return_data[18],      #EN Addr Sel            (BOOTP vs Static IP)
+                "437":return_data[19],      #DB Resistor Sel        (Setting For Dynamic Break Value)
+                "498":return_data[20],      #Motor Rr               (Motor Resistance)
+                "544":return_data[21],      #Reverse Disable
+                "545":return_data[22],      #Flying Start En
+                "573":return_data[23]       #Mtr Options Cfg        (Jerk Config)
             }
-            drive_ip_local = self.list_of_drive_objects[x].ip
             if ((data["6"] & 0x0001) == 0):
                 drive_is_writeable = True and Write
             else:
                 drive_is_writeable = False and Write
  
             if len(drive_health_data["en_data_out_parameters"]["value"]) == 4:
-                if (self.list_of_drive_objects[x].scattered_read([157,158,159,160]) != drive_health_data["en_data_out_parameters"]["value"]):
+                if (self.list_of_drive_objects[drive_ip_local].scattered_read([157,158,159,160]) != drive_health_data["en_data_out_parameters"]["value"]):
                     self.log.warning(drive_ip_local + " Has Wrong EN Data Out_Parameters Set: {0}".format(drive_health_data["EN_Data_Out_Parameters"]["parameters"][y]))
                     if(drive_is_writeable):
                         write_params = [
@@ -124,26 +124,12 @@ class NetworkObject():
                         (158, drive_health_data["en_data_out_parameters"]["value"][1]),
                         (159, drive_health_data["en_data_out_parameters"]["value"][2]),
                         (160, drive_health_data["en_data_out_parameters"]["value"][3])]
-                        network.list_of_drive_objects[ip].scattered_write(write_params)
+                        network.list_of_drive_objects[drive_ip_local].scattered_write(write_params)
             else:
                 self.log.critical("Length Of 'EN_Data_Out_Parameters:parameters' Does Not Match The Length 'EN_Data_Out_Parameters:correct values' In DriveHealthConfig")
                 
             if len(drive_health_data["en_subnet_parameters"]["value"]) == 4:
-                if (self.list_of_drive_objects[x].scattered_read([133, 134, 135, 136]) != drive_health_data["en_subnet_parameters"]["value"]):
-                    self.log.warning(drive_ip_local + " Has Wrong Subnet Parameters Set")
-                    if(drive_is_writeable):
-                        write_params = [
-                        (133, drive_health_data["en_subnet_parameters"]["value"][0]),
-                        (134, drive_health_data["en_subnet_parameters"]["value"][1]),
-                        (135, drive_health_data["en_subnet_parameters"]["value"][2]),
-                        (136, drive_health_data["en_subnet_parameters"]["value"][3])]
-                        self.list_of_drive_objects[drive_ip_local].scattered_write(write_params)
-
-            else:
-                self.log.critical("Length Of 'en_subnet_parameters' In DriveHealthConfig.json Does Not Match The Length Of 4")
-                
-            if len(drive_health_data["en_subnet_parameters"]["value"]) == 4:
-                if (self.list_of_drive_objects[x].scattered_read([133, 134, 135, 136]) != drive_health_data["en_subnet_parameters"]["value"]):
+                if (self.list_of_drive_objects[drive_ip_local].scattered_read([133, 134, 135, 136]) != drive_health_data["en_subnet_parameters"]["value"]):
                     self.log.warning(drive_ip_local + " Has Wrong Subnet Parameters Set")
                     if(drive_is_writeable):
                         write_params = [
@@ -156,7 +142,7 @@ class NetworkObject():
             else:
                 self.log.critical("Length Of 'en_subnet_parameters' In DriveHealthConfig.json Does Not Match The Length Of 4")
             
-            if(self.list_of_drive_objects[x].scattered_read([133, 134, 135, 136]) == [0,0,0,0]):
+            if(self.list_of_drive_objects[drive_ip_local].scattered_read([133, 134, 135, 136]) == [0,0,0,0]):
                 self.log.warning(drive_ip_local + " EN Gateway Not Set")
                 
             if(data["544"] != 1):
@@ -190,73 +176,78 @@ class NetworkObject():
             if(data["545"] != 0):
                 self.log.warning(drive_ip_local + " Hasn't Had Flying Start Disabled")
                 if(drive_is_writeable):
-                    self.self.list_of_drive_objects[x].write_pf525_parameter(545, 0)
+                    self.self.list_of_drive_objects[drive_ip_local].write_pf525_parameter(545, 0)
 
             if(data["44"] != drive_health_data["drive_max_speed"]):
                 self.log.warning(drive_ip_local + " Has The Wrong MAX FREQ")
                 if(drive_is_writeable):
-                    self.self.list_of_drive_objects[x].write_pf525_parameter(44, drive_health_data["drive_max_speed"])
+                    self.self.list_of_drive_objects[drive_ip_local].write_pf525_parameter(44, drive_health_data["drive_max_speed"])
                 
             if(data["41"] < 100 or data["42"] < 100):
                 if (data["573"] != 2):
                     self.log.warning(drive_ip_local + " Jerk Parameters Have Been Incorrectly Set. Needs To Be: 2")
                     if(drive_is_writeable):
-                        self.list_of_drive_objects[x].write_pf525_parameter(573, 2)
+                        self.list_of_drive_objects[drive_ip_local].write_pf525_parameter(573, 2)
             else:
                 if (data["573"] != 3):
                     self.log.warning(drive_ip_local + " Jerk Parameters Have Been Incorrectly Set. Needs To Be: 3")
                     if(drive_is_writeable):
-                        self.list_of_drive_objects[x].write_pf525_parameter(573, 3)
+                        self.list_of_drive_objects[drive_ip_local].write_pf525_parameter(573, 3)
 
             if(data["126"] != drive_health_data["drive_comm_loss"]):
                 self.log.warning(drive_ip_local + " COMM Lost Parameter Hasnt Been Set Properly")
                 if(drive_is_writeable):
-                    self.list_of_drive_objects[x].write_pf525_parameter(126, drive_health_data["drive_comm_loss"])
+                    self.list_of_drive_objects[drive_ip_local].write_pf525_parameter(126, drive_health_data["drive_comm_loss"])
 
             if(data["128"] != 1):
                 self.log.warning(drive_ip_local + " Drive Is Using BOOTP")
                 if(drive_is_writeable):
-                    self.list_of_drive_objects[x].write_pf525_parameter(128, 1)
+                    self.list_of_drive_objects[drive_ip_local].write_pf525_parameter(128, 1)
 
             if(data["62"] != 0):
                 self.log.warning(drive_ip_local + " DigIn TermBlk 02 Has Not Been Disabled")
                 if(drive_is_writeable):
-                    self.list_of_drive_objects[x].write_pf525_parameter(62, 0)
+                    self.list_of_drive_objects[drive_ip_local].write_pf525_parameter(62, 0)
 
             if(data["63"] != 0):
                 self.log.warning(drive_ip_local + " DigIn TermBlk 03 Has Not Been Disabled")
                 if(drive_is_writeable):
-                    self.list_of_drive_objects[x].write_pf525_parameter(63, 0)
+                    self.list_of_drive_objects[drive_ip_local].write_pf525_parameter(63, 0)
 
             if(data["64"] != 0):
                 self.log.warning(drive_ip_local + " 2-Wire Mode Has Not Been Disabled")
                 if(drive_is_writeable):
-                    self.list_of_drive_objects[x].write_pf525_parameter(64, 0)
+                    self.list_of_drive_objects[drive_ip_local].write_pf525_parameter(64, 0)
 
             if(data["65"] != 0):
                 self.log.warning(drive_ip_local + " DigIn TermBlk 05 Has Not Been Disabled")
                 if(drive_is_writeable):
-                    self.list_of_drive_objects[x].write_pf525_parameter(65, 0)
+                    self.list_of_drive_objects[drive_ip_local].write_pf525_parameter(65, 0)
 
             if(data["66"] != 0):
                 self.log.warning(drive_ip_local + " DigIn TermBlk 06 Has Not Been Disabled")
                 if(drive_is_writeable):
-                    self.list_of_drive_objects[x].write_pf525_parameter(66, 0)
+                    self.list_of_drive_objects[drive_ip_local].write_pf525_parameter(66, 0)
 
             if(data["67"] != 0):
                 self.log.warning(drive_ip_local + " DigIn TermBlk 07 Has Not Been Disabled")
                 if(drive_is_writeable):
-                    self.list_of_drive_objects[x].write_pf525_parameter(67, 0)
+                    self.list_of_drive_objects[drive_ip_local].write_pf525_parameter(67, 0)
 
             if(data["68"] != 0):
                 self.log.warning(drive_ip_local + " DigIn TermBlk 08 Has Not Been Disabled")
                 if(drive_is_writeable):
-                    self.list_of_drive_objects[x].write_pf525_parameter(68, 0)
+                    self.list_of_drive_objects[drive_ip_local].write_pf525_parameter(68, 0)
+                    
+            if(data["81"] == 0):
+                self.log.warning(drive_ip_local + " Parameter 81 Is A Default Value. Change to 0")
+                if(drive_is_writeable):
+                    self.list_of_drive_objects[drive_ip_local].write_pf525_parameter(81, 0)
                     
             if(data["105"] != 0):
                 self.log.warning(drive_ip_local + " Has Not Had Safety Open Fault Disabled")
                 if(drive_is_writeable):
-                    self.list_of_drive_objects[x].write_pf525_parameter(105, 0)
+                    self.list_of_drive_objects[drive_ip_local].write_pf525_parameter(105, 0)
 
         self.log.warning("Ending Drive Health Scanner")
 
