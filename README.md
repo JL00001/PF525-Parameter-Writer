@@ -35,3 +35,6 @@ GUI at some point; cleaning up code base
 # CREDITS
 ottowayi's wounderful pycomm3. https://github.com/ottowayi/pycomm3 Of which this codebase would not be possible. My codebase is just a object wrapper of sorts on his library. His library does the low level CIP network packet creation and he has helped many times during development of this codebase.
 
+pjkundert's CPPPO. https://github.com/pjkundert/cpppo While still under constrution, I plan on using CPPPO to create a "dummy" drive to read/write CIP packets too. As of now; it can read data from the dummy drive. Why? Because PowerFlex 525 Drives are expensive, and if anyone has one and wants to send me it, ill be open to it. 
+
+
