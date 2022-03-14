@@ -1,10 +1,10 @@
 def main():
     import NetworkObject
     network = NetworkObject.NetworkObject()    
-    #network.network_drive_health()
-    network.Dev_Add_Drive("192.168.100.33")
-    print(dir(network.list_of_drive_objects["192.168.100.33"]))
-
+    network.Dev_Add_Drive("192.168.1.143")
+    #network.network_parameter_dump()
+    for x in range(1,731):
+        print(network.single_read_parameter("192.168.1.143",x))
 
 if __name__ == "__main__":
     main()

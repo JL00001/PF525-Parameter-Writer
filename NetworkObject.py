@@ -362,7 +362,7 @@ def discover_network_devices(list_of_drive_objects,log):
         list_of_nodes = pycomm3.CIPDriver.discover()
         for x in list_of_nodes:
             if "ip_address" in x:
-                if(x["product_name"][0:13] == "PowerFlex 525"):
+                if(x["product_name"][0:13] == "PowerFlex 525" or "PowerFlex/20-COMM-E"):
                     if x['ip_address'] not in list_of_drive_objects.keys():
                         ipaddress = x['ip_address']
                         list_of_drive_objects[ipaddress] = DriveObject.DriveObject(ipaddress, log)
