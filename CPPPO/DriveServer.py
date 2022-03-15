@@ -25,7 +25,7 @@ def main( **kwds ):
         DPI_Parameters( name="DPI_Parameters", instance_id=x )
     return enip_main( argv=sys.argv[1:])
 
-sys.exit( main( attribute_class=main))
+sys.exit( main( attribute_class=main,argv=sys.argv[1:]))
 
 
 

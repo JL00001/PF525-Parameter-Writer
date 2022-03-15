@@ -3,8 +3,14 @@ def main():
     network = NetworkObject.NetworkObject()    
     network.Dev_Add_Drive("192.168.1.143")
     #network.network_parameter_dump()
+    print()
+    print(network.single_read_parameter("192.168.1.143",41))
+    network.single_write_parameter("192.168.1.143",41,666)
+    print(network.single_read_parameter("192.168.1.143",41))
+    """
     for x in range(1,731):
         print(network.single_read_parameter("192.168.1.143",x))
+    """
 
 if __name__ == "__main__":
     main()
