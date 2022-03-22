@@ -11,6 +11,9 @@ class DriveObject():
         self.ip_object = ipaddress.ip_address(ip)
         self.ip = str(self.ip_object)
 
+    def __str__(self):
+        return self.read_all_pf525_data()
+    
     def read_pf525_parameter(self, Instance):
         return(self.__read_pf525_data(b'\x93', int(Instance), b'\x09'))
 
