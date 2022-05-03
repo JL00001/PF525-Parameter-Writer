@@ -117,7 +117,7 @@ class NetworkObject():
  
             if len(drive_health_data["en_data_out_parameters"]["value"]) == 4:
                 if (self.list_of_drive_objects[drive_ip_local].scattered_read([157,158,159,160]) != drive_health_data["en_data_out_parameters"]["value"]):
-                    self.log.warning(drive_ip_local + " Has Wrong EN Data Out_Parameters Set: {0}".format(drive_health_data["EN_Data_Out_Parameters"]["parameters"][y]))
+                    self.log.warning(drive_ip_local + " Has Wrong EN Data Out_Parameters Set: {0}".format(drive_health_data["en_data_out_parameters"]["value"]))
                     if(drive_is_writeable):
                         write_params = [
                         (157, drive_health_data["en_data_out_parameters"]["value"][0]),

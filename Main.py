@@ -1,16 +1,8 @@
 def main():
     import NetworkObject
-    network = NetworkObject.NetworkObject()    
-    network.Dev_Add_Drive("192.168.1.143")
-    #network.network_parameter_dump()
-    print()
-    print(network.single_read_parameter("192.168.1.143",41))
-    network.single_write_parameter("192.168.1.143",41,666)
-    print(network.single_read_parameter("192.168.1.143",41))
-    """
-    for x in range(1,731):
-        print(network.single_read_parameter("192.168.1.143",x))
-    """
+    network = NetworkObject.NetworkObject()
+    #network.network_drive_health()
+    network.network_parameter_dump()
 
 if __name__ == "__main__":
     main()
