@@ -26,8 +26,7 @@ Drive Health Scanner (Just runs through all drives on the network, and checking 
 
 # WARNING 
 Writing to drives under operation can be dangerous! 
-Please, for the love of whatever god you pray to, use this with caution! I studied Electrical Engineering with an interest in programing, I am not a safety expert or do I claimed to be. Should you cause a accident, and you try to sue me; this paragraph will serve as defense evidence 1. Should anyone know more about safely writing to drives, and would be willing to help make my program safer, I am all ears
-  
+Please use this with caution! I studied Electrical Engineering with an interest in programing, I am not a safety expert or do I claimed to be.  
   
 # PLANS
 GUI at some point; cleaning up code base
