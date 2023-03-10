@@ -2,7 +2,7 @@
 Code base to interact with AB Power Flex 525 drives
 
 # WHAT
-This is my personal code base for a project I work on in the slow times during work. Rapid deployment of Power Flex 525 parameters. This will load in a Excel file and write out the parameter values to their respected parameter at their respected drive IP
+This is my personal code base for a project I work on in the slow times during work. Rapid deployment of Power Flex 525 parameters. This will load-in an Excel file and write out the parameter values to their respected parameter at their respected drive IP
 
 # WHY
 Because Rockwell didn't have a way to deploy parameters on mass or a way to audit parameters across the network; and my employer's way is to set parameters by hand. This lead to only the very necessary parameters being set and those not absolutely required for drive operation being forgotten.
@@ -20,16 +20,16 @@ Reading a single parameter from all drives on the network
 
 Searching for parameters whose value are not a given value
 
-Placing all PF 525 drives on the network in to an autotune state (very handy indeed)
+Placing all PF 525 drives on the network in to an autotune state (very handy indeed) and recovery from state after the autotune test has concluded
 
-Drive Health Scanner (Just runs through all drives on the network, and checking their Parameters based on MY Employer Standard. Your results may vary)
+Drive Health Scanner (Just runs through all drives on the network, and checking their Parameters based on MY EMPLOYER'S standards. Your results may vary)
 
 # WARNING 
 Writing to drives under operation can be dangerous! 
-Please use this with caution! I studied Electrical Engineering with an interest in programing, I am not a safety expert or do I claimed to be.  
+Please use this with caution! I studied Electrical Engineering with an interest in programing, I am not a safety expert or do I claimed to be. Use at your own risk
   
 # PLANS
-GUI at some point; cleaning up code base
+GUI at some point; cleaning up code base (Delayed Indef) I have been hearing that the PF525 might be end of life. The code base might be reused in some form
 
 # CREDITS
 ottowayi's wounderful pycomm3. https://github.com/ottowayi/pycomm3 Of which this codebase would not be possible. My codebase is just a object wrapper of sorts on his library. His library does the low level CIP network packet creation and he has helped many times during development of this codebase.
