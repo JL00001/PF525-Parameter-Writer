@@ -1,0 +1,29 @@
+# Settings for `python Main.py health`.  (TOML allows comments; the old JSON file still works.)
+
+# Expected firmware, P29.  5.001 == 5001, 5.002 == 5002
+firmware_version = 5002
+
+# Expected Maximum Freq, P44.  60 Hz == 6000, 70 Hz == 7000.
+# Some drives need a little more than 60 Hz to reach the target speed; keep it within ~10 %.
+max_speed = 6000
+
+# Expected Comm Loss Time, P126.  1 s == 10
+comm_loss = 10
+
+# Expected subnet mask, P133-P136.  255.255.0.0 == [255, 255, 0, 0]
+subnet = [255, 255, 0, 0]
+
+# Expected EN Data Out 1-4, P157-P160 (the data pulled from the Ethernet interface).
+# See the PowerFlex 525 parameter manual.
+en_data_out = [0, 0, 0, 0]
+
+# true = also list drives whose P76 / P437 imply a brake (BRK) or dynamic-brake resistor.
+# Cross-reference the output with the drawings.
+db_and_brk_msg = false
+
+# Expected Safety Open En, P105.  The scanner has always wanted 0 here, but
+# "Full Drive Parameter Template.xlsx" writes 1.  Pick the one you actually want.
+safety_open_en = 0
+
+# Expected Relay Out2 Sel, P81.  Left out = P81 == 0 is only reported, never fixed.
+# relay_out2_sel = 0

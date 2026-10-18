@@ -1,41 +1,90 @@
-# PF525-Parameter-Writer
-Code base to interact with AB Power Flex 525 drives
+# PowerFlex 525 tools
 
-# WHAT
-This is my personal code base for a project I work on in the slow times during work. Rapid deployment of Power Flex 525 parameters. This will load-in an Excel file and write out the parameter values to their respected parameter at their respected drive IP
+Bulk audit and configuration of PowerFlex 525 drives over EtherNet/IP (pycomm3).
 
-# WHY
-Because Rockwell didn't have a way to deploy parameters on mass or a way to audit parameters across the network; and my employer's way is to set parameters by hand. This lead to only the very necessary parameters being set and those not absolutely required for drive operation being forgotten.
+```
+pip install -r requirements.txt          # Python 3.11+
+python Main.py --help
+```
 
-This may seem like a trivial issue; but when you are installing 400 Power Flex 525 on one area of a site, then you will understand why I created this
+## Quick start
 
-# FEATURES
-Loading and writing parameter from a excel file and deploying them to drives
+```
+python Main.py --ip 192.168.1.143 read 41
+python Main.py --ip 192.168.1.143 write 41 100             # DRY RUN: shows old -> new
+python Main.py --ip 192.168.1.143 write 41 100 --apply     # writes
+python Main.py --ip-file drives.txt dump -o "Drive Parameter Dump"
+python Main.py --ip-file drives.txt load "Full Drive Parameter Template.xlsx"           # dry run
+python Main.py --ip-file drives.txt load "Full Drive Parameter Template.xlsx" --apply
+python Main.py --discover 15 health --csv health.csv       # report only
+python Main.py --discover 15 health --fix --dry-run        # show the fixes it would make
+python Main.py --discover 15 health --fix
+python Main.py --ip 192.168.1.143 autotune --yes           # STARTS THE MOTOR
+python Main.py --ip 192.168.1.143 restore pf525_backups/192.168.1.143_20261018-141500.json --apply
+```
 
-Parameter dumping of all parameters from all drives on the network (all those that respond to a CIP discovery request) 
+Drives come from `--ip` (repeat it), `--ip-file` (one IP per line, `#` comments) or
+`--discover SECONDS`. `-v` / `-vv` show more logging, `--log-file` writes it to a file.
 
-Writing a single parameter to all drives on the network
+## Safety
 
-Reading a single parameter from all drives on the network
+Everything that changes a drive goes through `Drive.write_parameters`, which:
 
-Searching for parameters whose value are not a given value
+* reads the current values first and **skips values that already match**,
+* with `--apply` absent (or `dry_run=True`) **changes nothing** and prints `old -> new`,
+* if the drive is **running**, refuses parameters that are read-only or
+  *Not Writable When Enabled* (decoded from the parameter descriptor),
+* **saves the old values** to `pf525_backups/<ip>_<timestamp>.json` before writing
+  (`--no-backup` to disable) - undo with `restore`,
+* **reads every value back** and reports `verify_failed` if it did not stick.
 
-Placing all PF 525 drives on the network in to an autotune state (very handy indeed) and recovery from state after the autotune test has concluded
+Autotune refuses a running drive, needs `--yes`, and if the tune does not finish it writes the
+old Motor Rr, Start Source and Speed Reference back and reports failure.
 
-Drive Health Scanner (Just runs through all drives on the network, and checking their Parameters based on MY EMPLOYER'S standards. Your results may vary)
+## Health scanner
 
-# WARNING 
-Writing to drives under operation can be dangerous! 
-Please use this with caution! I studied Electrical Engineering with an interest in programing, I am not a safety expert or do I claimed to be. Use at your own risk
-  
-# PLANS
-GUI at some point; cleaning up code base (Delayed Indef) I have been hearing that the PF525 might be end of life. The code base might be reused in some form
+`health` reads each drive once (one batched request) and checks it against the rule table in
+`pf525/health.py`. Some rules only report; the rest are fixable with `--fix`. Settings live in
+`DriveHealthConfig.toml` (commented) or the original `DriveHealthConfig.json`
+(old key names still work). Each key is documented in the `.toml`.
 
-# CREDITS
-ottowayi's wounderful pycomm3. https://github.com/ottowayi/pycomm3 Of which this codebase would not be possible. My codebase is just a object wrapper of sorts on his library. His library does the low level CIP network packet creation and he has helped many times during development of this codebase.
+Adding a check is one line in `RULES`:
 
-pjkundert's CPPPO. https://github.com/pjkundert/cpppo While still under constrution, I plan on using CPPPO to create a "dummy" drive to read/write CIP packets too. As of now; it can read/write data from/to the dummy drive. Why? Because PowerFlex 525 Drives are expensive, and if anyone has one and wants to send me it, ill be open to it. 
+```python
+_expect("static_ip", 128, 1, "drive is using BOOTP instead of a static IP"),
+```
 
-Currently, Network Parameter Dump, does not work with the dummy drive. This is due to the use of the custom CIP method "scattered read". This custom CIP method allowes the Parameter Dump to pull 63 parameter in one call; Speeding up downloading.
+## Spreadsheet format
 
+Column A = parameter number, column B = name, row 1 = drive IP addresses (from C onward).
+Empty cells are ignored; values must be whole numbers. `dump` writes this layout, `load` reads it.
+Drives named in the sheet but not on your drive list are skipped unless you pass `--add-sheet-drives`.
 
+## Values and signedness
+
+Parameters are read as raw unsigned 16-bit values (so Maximum Freq = 40000 reads as 40000).
+Writes accept -32768..65535. Use `drive.read_parameter(p, signed=True)` for signed parameters.
+
+## Library use
+
+```python
+from pf525 import Network, Drive
+
+net = Network()
+net.add_drive("192.168.1.143")
+net.write(41, 100, dry_run=True).values        # {ip: WriteResult}
+
+with Drive("192.168.1.143") as d:              # one session for all of these
+    d.read_parameters([41, 42, 44])            # {41: ..., 42: ..., 44: ...}
+    d.write_parameters({41: 100, 42: 100})
+```
+
+The old method names (`single_read_parameter`, `read_pf525_parameter`, `network_parameter_dump`, ...)
+still exist as thin wrappers. The old `network_autoTune_drive` / `network_masked_autoTune_drive`
+are replaced by `Network.autotune(confirm=True)` on purpose.
+
+## Tests
+
+`pip install pytest && python -m pytest tests`. The tests run against a simulated drive
+(`tests/fake_pycomm3.py`), so they check this code's logic but **not** pycomm3's wire encoding or a
+real drive. Try a read-only command and a dry-run write on one drive before trusting it on the line.
