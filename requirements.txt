@@ -2,3 +2,11 @@ pycomm3>=1.2
 pandas>=2.0
 openpyxl>=3.1
 # Python 3.11+ (uses tomllib)
+# GUI.py needs Tkinter, which is part of the Python standard library but is
+# packaged separately by some distros/package managers (not installable via pip):
+#   Debian/Ubuntu: apt install python3-tk
+#   Fedora:        dnf install python3-tkinter
+#   NixOS:         ./run-gui.sh handles this (plain pip/venv cannot provide
+#                  Tkinter here - it must come from the same nix-shell
+#                  environment as pandas/openpyxl, see run-gui.sh)
+#   macOS/Windows: included with the python.org installer
